@@ -1,23 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import {
-  Sparkles,
-  Code2,
-  ImageIcon,
-  Mic,
-  Paperclip,
-  Globe,
-  ArrowUp,
-  ChevronRight,
-  Plus,
-  Clock,
-  Zap,
-  Wand2,
-  LayoutGrid,
-  MoreHorizontal,
-} from "lucide-react";
+import { useRef } from "react";
 
-import heroCity from "../assets/hero-city.jpg";
+import { HeroIntro } from "@/components/aura/HeroIntro";
+import { Workspace } from "@/components/aura/Workspace";
 
 export const Route = createFileRoute("/")({
   head: () => ({
