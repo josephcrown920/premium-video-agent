@@ -215,6 +215,51 @@
   .delay-700 { animation-delay: 700ms; }
 }
 
+@layer utilities {
+  .animate-hero-zoom {
+    animation: hero-zoom 24s ease-in-out infinite alternate;
+  }
+
+  .animate-word-in {
+    animation: word-in 0.6s var(--ease-out-expo) both;
+  }
+
+  .animate-float {
+    animation: float 2.6s ease-in-out infinite;
+  }
+
+  .caret::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: -0.15em;
+    background: currentColor;
+    animation: caret-blink 1s steps(1) infinite;
+  }
+}
+
+@keyframes hero-zoom {
+  from { transform: scale(1.05); }
+  to { transform: scale(1.18) translateY(-2%); }
+}
+
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(12px) rotateX(40deg); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 6px); }
+}
+
+@keyframes caret-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
