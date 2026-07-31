@@ -157,7 +157,7 @@ export function Workspace() {
             )}
             {error && (
               <p className="text-sm text-destructive">
-                Something went wrong while generating. Try again.
+                {error.message || "Something went wrong while generating. Try again."}
               </p>
             )}
             <div ref={endRef} />
