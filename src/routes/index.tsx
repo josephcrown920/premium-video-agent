@@ -133,7 +133,7 @@ function Index() {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 pb-48 pt-2 sm:pt-6">
+        <main className="flex-1 pb-60 pt-2 sm:pb-52 sm:pt-6">
           {/* Hero greeting */}
           <section className="animate-fade-in-up delay-100 mb-8 sm:mb-12">
             <h1 className="text-balance text-3xl font-medium leading-tight tracking-tight sm:text-4xl md:text-5xl">
