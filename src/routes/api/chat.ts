@@ -30,6 +30,15 @@ export const Route = createFileRoute("/api/chat")({
 
         return result.toUIMessageStreamResponse({
           originalMessages: messages as UIMessage[],
+          onError: (error) => {
+            console.error("chat stream error", error);
+            const text = error instanceof Error ? error.message : String(error);
+            if (text.includes("402") || text.toLowerCase().includes("credit")) {
+              return "You're out of AI credits. Top up your Lovable AI credits to keep generating.";
+            }
+            if (text.includes("429")) return "Rate limit reached. Try again in a moment.";
+            return "Generation failed. Please try again.";
+          },
         });
       },
     },
