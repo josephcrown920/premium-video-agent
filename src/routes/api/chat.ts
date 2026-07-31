@@ -32,7 +32,8 @@ export const Route = createFileRoute("/api/chat")({
           originalMessages: messages as UIMessage[],
           onError: (error) => {
             console.error("chat stream error", error);
-            const text = error instanceof Error ? error.message : String(error);
+            const detail = error as { message?: string; responseBody?: string; statusCode?: number };
+            const text = `${detail?.statusCode ?? ""} ${detail?.message ?? ""} ${detail?.responseBody ?? ""}`;
             if (text.includes("402") || text.toLowerCase().includes("credit")) {
               return "You're out of AI credits. Top up your Lovable AI credits to keep generating.";
             }
