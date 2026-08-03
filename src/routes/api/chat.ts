@@ -4,7 +4,6 @@ import {
   stepCountIs,
   streamText,
   type UIMessage,
-  type UIMessagePart,
 } from "ai";
 
 import { createAgentTools, loadMemoryPreamble } from "@/lib/agent-tools.server";
@@ -117,5 +116,3 @@ export const Route = createFileRoute("/api/chat")({
     },
   },
 });
-
-export type ChatPart = UIMessagePart<never, never>;
