@@ -70,10 +70,13 @@ export function Workspace() {
 
   function submit(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || isBusy) return;
+    if (!trimmed && !files) return;
+    if (isBusy) return;
     saveDraft(trimmed);
-    void sendMessage({ text: trimmed });
+    void sendMessage({ text: trimmed, files });
     setInput("");
+    setFiles(undefined);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
