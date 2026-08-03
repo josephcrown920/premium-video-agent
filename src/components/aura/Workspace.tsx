@@ -5,11 +5,14 @@ import {
   Bookmark,
   Clock,
   Code2,
+  ImageIcon,
   LayoutGrid,
+  Paperclip,
   Plus,
   Sparkles,
   Square,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
