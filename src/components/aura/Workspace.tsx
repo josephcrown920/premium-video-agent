@@ -57,9 +57,6 @@ export function Workspace() {
   const isBusy = status === "submitted" || status === "streaming";
   const typed = useTypewriter(DEMO_PHRASES, !isFocused && input.length === 0);
 
-  const isBusy = status === "submitted" || status === "streaming";
-  const typed = useTypewriter(DEMO_PHRASES, !isFocused && input.length === 0);
-
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting("Good morning");
