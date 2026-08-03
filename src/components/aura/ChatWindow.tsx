@@ -376,11 +376,13 @@ export function ChatWindow({ threadId, initialMessages, initialThreads }: Props)
                 >
                   <button
                     type="button"
-                    aria-label="Attach image"
+                    aria-label="Add photo or file"
                     onClick={() => fileRef.current?.click()}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground sm:size-10"
+                    className="flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground sm:size-10"
+                    title="Add photo or file"
                   >
-                    <Paperclip className="size-4" />
+                    <ImageIcon className="size-4" />
+                    <span className="hidden text-xs font-medium sm:inline">Add photo</span>
                   </button>
                   <input
                     ref={fileRef}
