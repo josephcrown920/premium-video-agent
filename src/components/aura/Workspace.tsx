@@ -47,10 +47,15 @@ export function Workspace() {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [greeting, setGreeting] = useState("Good evening");
+  const [files, setFiles] = useState<FileList | undefined>();
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const { messages, sendMessage, status, stop, error } = useChat({ transport });
   const { drafts, saveDraft, removeDraft, clearDrafts } = useDrafts();
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const isBusy = status === "submitted" || status === "streaming";
+  const typed = useTypewriter(DEMO_PHRASES, !isFocused && input.length === 0);
 
   const isBusy = status === "submitted" || status === "streaming";
   const typed = useTypewriter(DEMO_PHRASES, !isFocused && input.length === 0);
