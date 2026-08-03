@@ -3,10 +3,12 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
 export type StoredMessage = {
   id: string;
   role: string;
-  parts: unknown[];
+  parts: Json[];
 };
 
 export type ThreadSummary = {
@@ -84,7 +86,7 @@ export const getThread = createServerFn({ method: "GET" })
     const messages: StoredMessage[] = (rows ?? []).map((row) => ({
       id: row.id,
       role: row.role,
-      parts: (Array.isArray(row.parts) ? row.parts : []) as unknown[],
+      parts: (Array.isArray(row.parts) ? row.parts : []) as Json[],
     }));
 
     return {
