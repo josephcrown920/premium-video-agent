@@ -345,15 +345,30 @@ export function ChatWindow({ threadId, initialMessages, initialThreads }: Props)
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-background via-background/90 to-transparent px-4 pb-6 pt-12 lg:pl-72">
           <div className="mx-auto w-full max-w-2xl">
             {files && files.length > 0 && (
-              <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <Paperclip className="size-3.5" />
-                {files.length} file{files.length > 1 ? "s" : ""} attached
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                {Array.from(files).map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface/80 px-2 py-1.5"
+                  >
+                    {file.type.startsWith("image/") ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="size-8 rounded-md object-cover"
+                      />
+                    ) : (
+                      <Paperclip className="size-3.5" />
+                    )}
+                    <span className="max-w-[120px] truncate">{file.name}</span>
+                  </div>
+                ))}
                 <button
                   onClick={() => {
                     setFiles(undefined);
                     if (fileRef.current) fileRef.current.value = "";
                   }}
-                  className="text-foreground hover:text-destructive"
+                  className="ml-1 text-foreground hover:text-destructive"
                   aria-label="Remove attachments"
                 >
                   <X className="size-3.5" />
@@ -376,11 +391,13 @@ export function ChatWindow({ threadId, initialMessages, initialThreads }: Props)
                 >
                   <button
                     type="button"
-                    aria-label="Attach image"
+                    aria-label="Add photo or file"
                     onClick={() => fileRef.current?.click()}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground sm:size-10"
+                    className="flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground sm:size-10"
+                    title="Add photo or file"
                   >
-                    <Paperclip className="size-4" />
+                    <ImageIcon className="size-4" />
+                    <span className="hidden text-xs font-medium sm:inline">Add photo</span>
                   </button>
                   <input
                     ref={fileRef}

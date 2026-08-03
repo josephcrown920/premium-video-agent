@@ -5,11 +5,14 @@ import {
   Bookmark,
   Clock,
   Code2,
+  ImageIcon,
   LayoutGrid,
+  Paperclip,
   Plus,
   Sparkles,
   Square,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -44,10 +47,12 @@ export function Workspace() {
   const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [greeting, setGreeting] = useState("Good evening");
+  const [files, setFiles] = useState<FileList | undefined>();
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const { messages, sendMessage, status, stop, error } = useChat({ transport });
   const { drafts, saveDraft, removeDraft, clearDrafts } = useDrafts();
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const isBusy = status === "submitted" || status === "streaming";
   const typed = useTypewriter(DEMO_PHRASES, !isFocused && input.length === 0);
@@ -65,10 +70,13 @@ export function Workspace() {
 
   function submit(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || isBusy) return;
+    if (!trimmed && !files) return;
+    if (isBusy) return;
     saveDraft(trimmed);
-    void sendMessage({ text: trimmed });
+    void sendMessage({ text: trimmed, files });
     setInput("");
+    setFiles(undefined);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
@@ -226,6 +234,37 @@ export function Workspace() {
               }`}
             />
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface/95 shadow-2xl backdrop-blur-xl">
+              {files && files.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2 sm:px-4">
+                  {Array.from(files).map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface/80 px-2 py-1.5"
+                    >
+                      {file.type.startsWith("image/") ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="size-8 rounded-md object-cover"
+                        />
+                      ) : (
+                        <Paperclip className="size-3.5" />
+                      )}
+                      <span className="max-w-[120px] truncate text-xs">{file.name}</span>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setFiles(undefined);
+                      if (fileRef.current) fileRef.current.value = "";
+                    }}
+                    className="ml-1 text-foreground hover:text-destructive"
+                    aria-label="Remove attachments"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -233,6 +272,24 @@ export function Workspace() {
                 }}
                 className="flex items-end gap-2 p-3 sm:p-4"
               >
+                <button
+                  type="button"
+                  aria-label="Add photo or file"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground sm:size-10"
+                  title="Add photo or file"
+                >
+                  <ImageIcon className="size-4" />
+                  <span className="hidden text-xs font-medium sm:inline">Add photo</span>
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  hidden
+                  onChange={(e) => setFiles(e.target.files ?? undefined)}
+                />
                 <div className="relative flex-1">
                   {input.length === 0 && (
                     <span
@@ -277,9 +334,9 @@ export function Workspace() {
                   <button
                     type="submit"
                     aria-label="Send prompt"
-                    disabled={!input.trim()}
+                    disabled={!input.trim() && !files}
                     className={`flex size-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 sm:size-10 ${
-                      input.trim()
+                      input.trim() || files
                         ? "bg-white text-black shadow-lg shadow-white/10 hover:bg-white/90"
                         : "bg-white/10 text-muted-foreground"
                     }`}
