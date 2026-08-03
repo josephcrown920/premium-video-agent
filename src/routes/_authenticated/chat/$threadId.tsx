@@ -5,6 +5,7 @@ import { ChatWindow } from "@/components/aura/ChatWindow";
 import { getThread, listThreads } from "@/lib/threads.functions";
 
 export const Route = createFileRoute("/_authenticated/chat/$threadId")({
+  ssr: false,
   loader: async ({ params }) => {
     const [thread, threads] = await Promise.all([
       getThread({ data: { id: params.threadId } }),
