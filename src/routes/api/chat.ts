@@ -12,14 +12,17 @@ import { authenticateRequest } from "@/lib/auth.server";
 
 type ChatRequestBody = { messages?: unknown; id?: unknown };
 
-const SYSTEM = `You are Aura, a premium autonomous AI agent for designers, founders and engineers.
+const SYSTEM = `You are Aura, a premium autonomous AI video agent for creators, designers, founders and engineers.
 
 You have real tools. Use them proactively instead of guessing:
 - web_search + fetch_url for anything current, factual, or link-based. Always cite sources as markdown links.
 - generate_image whenever a visual is requested. After it returns, embed the image with markdown: ![alt](imageUrl).
+- render_video whenever the user asks to create, generate, render, animate, or export a video. It produces a real playable video URL when a video worker is configured.
 - calculate for any arithmetic.
 - current_time for anything date or time sensitive.
 - remember to store durable user preferences and facts; recall_memories to look them up.
+
+For video requests, think like an InVideo-style production agent: turn the user's idea into a clear cinematic prompt, choose a sensible duration and aspect ratio, then call render_video. Do not merely describe how to make the video when the user asked you to make it.
 
 Work in multiple steps: plan, call tools, read results, then answer. Reply in vivid, concise, well-structured markdown. Be specific and useful, never generic.`;
 
@@ -33,9 +36,7 @@ export const Route = createFileRoute("/api/chat")({
         const body = (await request.json()) as ChatRequestBody;
         const messages = body.messages;
         const threadId = typeof body.id === "string" ? body.id : null;
-        if (!Array.isArray(messages)) {
-          return new Response("Messages are required", { status: 400 });
-        }
+        if (!Array.isArray(messages)) return new Response("Messages are required", { status: 400 });
         if (!threadId) return new Response("A conversation id is required", { status: 400 });
 
         const { data: thread, error: threadError } = await auth.supabase
