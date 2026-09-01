@@ -33,6 +33,81 @@ function safeMath(expression: string): number {
   return value;
 }
 
+async function renderWithVideoWorker(input: {
+  prompt: string;
+  durationSeconds: number;
+  aspectRatio: string;
+  imageUrls?: string[];
+}) {
+  const endpoint = process.env["VIDEO_RENDERER_URL"] ?? process.env["RUNPOD_VIDEO_ENDPOINT"];
+  const apiKey = process.env["VIDEO_RENDERER_API_KEY"] ?? process.env["RUNPOD_API_KEY"];
+  if (!endpoint || !apiKey) {
+    return {
+      error:
+        "Video rendering is not connected yet. Set VIDEO_RENDERER_URL and VIDEO_RENDERER_API_KEY (or RUNPOD_VIDEO_ENDPOINT and RUNPOD_API_KEY) on the server.",
+    };
+  }
+
+  const headers = {
+    "content-type": "application/json",
+    authorization: `Bearer ${apiKey}`,
+  };
+
+  const start = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      input: {
+        prompt: input.prompt,
+        duration: input.durationSeconds,
+        aspect_ratio: input.aspectRatio,
+        image_urls: input.imageUrls ?? [],
+      },
+    }),
+  });
+
+  if (!start.ok) {
+    const detail = await start.text();
+    return { error: `Video worker rejected the job (${start.status}): ${detail.slice(0, 400)}` };
+  }
+
+  const started = (await start.json()) as {
+    id?: string;
+    status?: string;
+    output?: unknown;
+    video_url?: string;
+    url?: string;
+  };
+
+  const immediateUrl = started.video_url ?? started.url;
+  if (immediateUrl) return { videoUrl: immediateUrl, status: "completed" };
+  if (!started.id) return { error: "Video worker returned no job id." };
+
+  const statusUrl = `${endpoint.replace(/\/$/, "")}/${encodeURIComponent(started.id)}`;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const status = await fetch(statusUrl, { headers: { authorization: `Bearer ${apiKey}` } });
+    if (!status.ok) continue;
+    const data = (await status.json()) as {
+      status?: string;
+      output?: { video_url?: string; url?: string } | string;
+      video_url?: string;
+      url?: string;
+      error?: string;
+    };
+    const videoUrl =
+      data.video_url ??
+      data.url ??
+      (typeof data.output === "string" ? data.output : data.output?.video_url ?? data.output?.url);
+    if (videoUrl) return { videoUrl, status: "completed", jobId: started.id };
+    if (["failed", "canceled", "cancelled", "error"].includes((data.status ?? "").toLowerCase())) {
+      return { error: data.error ?? "Video rendering failed.", jobId: started.id };
+    }
+  }
+
+  return { error: "Video rendering timed out while waiting for the worker.", jobId: started.id };
+}
+
 export function createAgentTools(ctx: AuthedContext, apiKey: string) {
   return {
     web_search: tool({
@@ -160,6 +235,24 @@ export function createAgentTools(ctx: AuthedContext, apiKey: string) {
           return { prompt, imageUrl: signed.signedUrl };
         } catch (error) {
           return { error: `Image generation failed: ${(error as Error).message}` };
+        }
+      },
+    }),
+
+    render_video: tool({
+      description:
+        "Render a real video from a prompt using the configured video-generation/rendering worker. Use whenever the user asks to create, generate, render, animate, or export a video. The worker should return a playable video URL.",
+      inputSchema: z.object({
+        prompt: z.string().describe("Detailed video prompt or scene description"),
+        durationSeconds: z.number().min(1).max(300).default(10),
+        aspectRatio: z.enum(["16:9", "9:16", "1:1"]).default("16:9"),
+        imageUrls: z.array(z.string().url()).optional().describe("Optional reference images"),
+      }),
+      execute: async ({ prompt, durationSeconds, aspectRatio, imageUrls }) => {
+        try {
+          return await renderWithVideoWorker({ prompt, durationSeconds, aspectRatio, imageUrls });
+        } catch (error) {
+          return { error: `Video rendering failed: ${(error as Error).message}` };
         }
       },
     }),
