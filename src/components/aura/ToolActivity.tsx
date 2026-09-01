@@ -3,6 +3,7 @@ import {
   Calculator,
   Check,
   Clock,
+  Film,
   Globe,
   ImageIcon,
   Loader2,
@@ -16,6 +17,7 @@ const LABELS: Record<string, { label: string; icon: typeof Search }> = {
   calculate: { label: "Calculating", icon: Calculator },
   current_time: { label: "Checking the time", icon: Clock },
   generate_image: { label: "Generating image", icon: ImageIcon },
+  render_video: { label: "Rendering video", icon: Film },
   remember: { label: "Saving to memory", icon: Brain },
   recall_memories: { label: "Recalling memory", icon: Brain },
 };
@@ -39,14 +41,10 @@ export function ToolActivity({ name, state, input, output }: Props) {
   const Icon = meta.icon;
   const running = state !== "output-available" && state !== "output-error";
   const detail = summarize(input);
-  const image =
-    output && typeof output === "object" && "imageUrl" in (output as Record<string, unknown>)
-      ? String((output as Record<string, unknown>).imageUrl)
-      : null;
-  const failure =
-    output && typeof output === "object" && "error" in (output as Record<string, unknown>)
-      ? String((output as Record<string, unknown>).error)
-      : null;
+  const record = output && typeof output === "object" ? (output as Record<string, unknown>) : null;
+  const image = record?.imageUrl ? String(record.imageUrl) : null;
+  const video = record?.videoUrl ? String(record.videoUrl) : null;
+  const failure = record?.error ? String(record.error) : null;
 
   return (
     <div className="space-y-2">
@@ -72,6 +70,22 @@ export function ToolActivity({ name, state, input, output }: Props) {
           loading="lazy"
           className="max-w-sm rounded-2xl border border-white/10 shadow-2xl"
         />
+      )}
+      {video && (
+        <div className="max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+          <video src={video} controls playsInline preload="metadata" className="block w-full" />
+          <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted-foreground">
+            <span>Video rendered successfully</span>
+            <a
+              href={video}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary hover:underline"
+            >
+              Open video
+            </a>
+          </div>
+        </div>
       )}
     </div>
   );
