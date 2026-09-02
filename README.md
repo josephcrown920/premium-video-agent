@@ -1,134 +1,136 @@
-# Aurora AI — Individual Video Agent
+# Aurora Individual Video Agent
 
-Aurora is an autonomous video-production workspace designed against the current InVideo Agent Two capability model.
+This repository is part of the Aurora video-agent family: autonomous, production-oriented agents built to take a high-level video brief and carry it through planning, references, generation, inspection, revision, editing, QA and delivery.
 
-The goal is **not** to clone InVideo's branding or UI. The goal is to reproduce the useful production logic: one persistent project, one individual agent, specialized internal crew roles, multi-input context, model routing, Vision pre-production, Notebook experimentation, a persistent Slate edit, reusable workflows/playbooks, agentic stock selection, targeted revisions, QA, and multi-format delivery.
+The target is not a generic prompt-to-video wrapper. The agent should behave like an individual producer/director/editor with persistent project memory, reusable skills, model-aware routing and targeted repair.
 
-## Production loop
+## Production contract
 
 ```text
-Brief / Script / References / URL / Media
-                    ↓
-                 Context
-                    ↓
-          Individual Agent / Producer
-                    ↓
-       Script → Characters → World → Shots
-                    ↓
-              Vision / Boards
-             ┌──────┼──────┐
-             ↓      ↓      ↓
-           Looks  Angles  Frames
-             └──────┼──────┘
-                    ↓
-              Notebook / Models
-                    ↓
-          Per-shot model routing
-                    ↓
-        Stock OR Image OR Video generation
-                    ↓
-               Candidate QA
-                    ↓
-                 Slate
-                    ↓
-       Natural-language edit compiler
-                    ↓
-          Visual + Audio QA
-                    ↓
-        Targeted regeneration / repair
-                    ↓
-                 FFmpeg
-                    ↓
-       16:9 / 9:16 / 1:1 / 4:5
+User brief / script / URL / media / references
+                 ↓
+             Project Context
+                 ↓
+       Individual Video Agent
+                 ↓
+  brief → script → characters → world → shots
+                 ↓
+ Vision / storyboard / looks / angles / frames
+                 ↓
+ Notebook experiments + approved references
+                 ↓
+ Capability-aware model routing
+                 ↓
+ image / video / avatar / voice / music / SFX
+                 ↓
+ Candidate inspection + acceptance gates
+                 ↓
+ Persistent Slate / timeline
+                 ↓
+ Natural-language edit compiler
+                 ↓
+ Targeted regeneration / repair
+                 ↓
+ Visual + audio + continuity QA
+                 ↓
+ FFmpeg / render workers
+                 ↓
+ 16:9 / 9:16 / 1:1 / 4:5 delivery
 ```
 
-## Current architecture
+## Architecture
 
-### Individual Agent
+### Project Memory
 
-The user directs one agent. Internally it can delegate to:
+`project-memory/core.ts` provides the common memory contract across the agent family. It models Context, Notebook entries, references, production locks, acceptance criteria, generations, approvals, rejections and continuity events.
 
-- Creative Producer
-- Scriptwriter
-- Storyboard Artist
-- Director
-- Cinematographer
-- Casting
-- Production Designer
-- Editor
-- Sound Designer
-- Music Designer
-- Colorist
-- Caption/Translation Specialist
-- QA Reviewer
+Approved or locked information is production state rather than disposable prompt text. A failed shot should be regenerated without resetting unrelated approved work.
 
-### Context
+### Production Agent Core
 
-The project can hold briefs, scripts, PDFs, images, videos, audio, URLs, character references, location references, style documents and shot lists. Locked context becomes a continuity constraint for downstream work.
+`agent-core/production.ts` normalizes generation requests and candidate scoring across video, image, voice, music, SFX, avatar and upscale work. It supports capability-aware routing, candidate selection, acceptance gates, targeted edits and campaign variants.
 
-### Vision
+### ModelArk / BytePlus backend
 
-Vision is the storyboard/pre-production layer with:
+`src/lib/modelark.server.ts` and `agent-core/modelark.ts` provide direct ModelArk execution. The shared adapter supports:
 
-- Boards: 3×3 storyboard generation
-- Looks: consistent visual language
-- Angles: alternate camera perspectives
-- Frame extraction
-- Reference handoff into generation
+- OpenAI-compatible Chat Completions
+- true SSE token streaming (`stream: true`)
+- Seedream image generation
+- Seedance video task submission + polling
+- reference-image inputs
+- configurable resolution, duration and aspect ratio
+- environment-driven model IDs and regional base URLs
+- retry tolerance for 429/5xx video polling
 
-### Notebook
+Secrets remain server-only. Supported names are `ARK_API_KEY` / `BYTEPLUS_API_KEY`, with `ARK_BASE_URL` / `BYTEPLUS_BASE_URL` and model-specific overrides.
 
-Notebook is the manual generation mode inside the same project. Generations are addressable by page/thread, carry their prompts and references, and can be approved back into the agent's project context.
+### Streaming
 
-### Model router
+Agent-facing responses should stream whenever the upstream provider supports it. ModelArk is wired for native SSE token streaming. The UI should consume incremental deltas rather than waiting for one large JSON response.
 
-Aurora uses a capability registry rather than one global model. The router can evaluate quality, cost, latency, references, camera control, image-to-video, audio, editing support, tags and availability for each shot.
+For long-running media jobs, progress is streamed as explicit lifecycle events such as `accepted`, `planning`, `routing`, `generating`, `inspecting`, `revising`, `rendering`, `completed`, `retrying` and `failed`. The final MP4 is only reported as complete after the worker has actually produced and verified it.
 
-The initial catalog includes Seedance, Kling, Veo, Sora, Seedream, GPT Image, Nano Banana, FLUX, ElevenLabs and licensed-stock routing. Actual vendor execution remains credential/configuration dependent.
+## Individual-agent workflow
 
-### Slate
+1. Understand the request and production objective.
+2. Retrieve relevant Context, Notebook, references, locks and skills.
+3. Build or update the plan.
+4. Select only the tools/models required.
+5. Generate candidates when useful.
+6. Inspect identity, prompt fit, camera, anatomy, lighting, composition and temporal continuity.
+7. Approve strong generations into project memory.
+8. Regenerate only failed assets/shots.
+9. Compile natural-language edits into deterministic Slate operations.
+10. Run visual, audio and continuity QA.
+11. Render the requested delivery formats without destroying the master.
 
-Slate is the persistent production timeline. Natural-language edits compile into reversible operations so a request such as:
+## Skills
 
-> Make shot 6 darker, keep the character and voice, replace the background, and make a TikTok version.
+Video-relevant supplied skills are treated as routing knowledge. Current families include HeyGen Avatar, HeyGen Video, HeyGen Translate, Chengfeng 剪口播, Chengfeng 口播成片, Ian Xiaohei SVG Motion and Chengfeng 自进化. Unrelated skills are not injected into video routing.
 
-can affect only the required shots and timeline regions instead of rebuilding the project.
+## Model routing
 
-### Workflows and Playbooks
+Routing is capability based rather than one global model. ModelArk should be preferred for supported Seedance/Seedream work when direct credentials and model activation are present. Fallback providers remain available for unavailable, rate-limited or unsuitable requests.
 
-Workflows are reusable guided production jobs such as Casting, Storyboarding and Production Design. Playbooks are standing rules for camera language, model preferences, approval behavior, quality tier, brand constraints and generation policy.
+Never silently replace a user-pinned model/provider. Return a clear activation/configuration error instead.
 
-### Stock intelligence
+## Continuity and revision
 
-The agent considers licensed stock before paying the generation cost when a shot does not require generative control, exact identity or exact product behavior.
+Characters, faces, wardrobe, locations, props, style, camera language and approved generations can become locks. Downstream generation retrieves these constraints automatically.
 
-## Key files
+Revisions are scoped to the smallest affected unit: background changes affect the dependent shot; face fixes reuse the locked identity reference; pacing changes edit the timeline; vertical delivery creates a variant; subtitle edits do not regenerate the underlying footage.
 
-- `src/lib/invideo-agent.ts` — production graph, routing, Slate revisions, approval and pipeline contracts
-- `src/lib/invideo-workspace.ts` — Context, Pages, Threads, Workflows and Playbooks
-- `src/lib/model-catalog.ts` — capability-based model registry and routing defaults
-- `src/components/aura/VisionStudio.tsx` — Vision storyboard workspace
-- `src/components/aura/VideoStudio.tsx` — main production workspace
-- `INVIDEO_PARITY_ARCHITECTURE.md` — architecture and acceptance criteria
-- `.github/workflows/aurora-ci.yml` — typecheck, lint and production build validation
+## Acceptance gate
 
-## Important boundary
+A feature is not production-complete because a UI button exists. It needs a domain contract, API/workflow, UI entry where appropriate, provider/worker boundary, observable status, failure path, revision path, persisted approved state and verifiable final output.
 
-The repository contains the application architecture and provider integration boundaries. Live production still requires the relevant API credentials, GPU workers, storage, rendering infrastructure, stock licenses, authentication and billing services.
+## Environment
 
-A feature is not considered production-complete merely because a button or adapter exists. The acceptance test is an end-to-end project in which the agent can plan, generate, inspect, revise, edit, render and deliver while preserving approved project state.
+```text
+ARK_API_KEY=...
+ARK_BASE_URL=https://ark.ap-southeast.bytepluses.com/api/v3
+MODELARK_TEXT_MODEL=<active text model or endpoint>
+MODELARK_IMAGE_MODEL=<active Seedream model or endpoint>
+MODELARK_VIDEO_MODEL=<active Seedance model or endpoint>
+```
 
-## Development
+Never commit real keys. Use Replit/Lovable/Cloudflare or the deployment platform's secret manager.
 
-```sh
+## Validation
+
+```bash
 npm install
-npm run dev
-```
-
-Validation:
-
-```sh
 npx tsc --noEmit
-npm run lint
 npm run build
 ```
+
+Use the repository's existing lint/test commands when present.
+
+## Production boundary
+
+Live generation still depends on valid provider credentials, model activation, storage, queues/workers and rendering infrastructure. The codebase provides the agent contracts and provider boundaries; production readiness is proven by an end-to-end project that can plan, generate, inspect, revise, render and deliver while preserving approved state.
+
+## Aurora Global synchronization
+
+The canonical Aurora Global product also contains video-agent routes and exported video-agent artifacts. Shared improvements must be propagated into those product surfaces rather than leaving the standalone agent repositories ahead of the actual Aurora experience.
